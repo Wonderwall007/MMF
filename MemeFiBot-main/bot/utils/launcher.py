@@ -46,26 +46,6 @@ def get_proxies() -> list[Proxy]:
     return proxies
 
 
-async def get_tg_clients() -> list[Client]:
-    session_names = get_session_names()
-
-    if not session_names:
-        raise FileNotFoundError("Not found session files")
-
-    if not settings.API_ID or not settings.API_HASH:
-        raise ValueError("API_ID and API_HASH not found in the .env file.")
-
-    tg_clients = [Client(
-        name=session_name,
-        api_id=settings.API_ID,
-        api_hash=settings.API_HASH,
-        workdir='sessions/',
-        plugins=dict(root='bot/plugins')
-    ) for session_name in session_names]
-
-    return tg_clients
-
-
 async def process() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=int, help='Action to perform')
@@ -99,9 +79,17 @@ async def process() -> None:
 
 
 async def run_tasks(tg_clients: list[Client]):
-    proxies = get_proxies()
-    proxies_cycle = cycle(proxies) if proxies else None
-    tasks = [asyncio.create_task(run_tapper(tg_client=tg_client, proxy=next(proxies_cycle) if proxies_cycle else None))
-             for tg_client in tg_clients]
+        proxies = get_proxies()
+        proxies_cycle = cycle(proxies) if proxies else None
+        session_manager = SessionManager()
 
-    await asyncio.gather(*tasks)
+        with open('data.txt', 'r') as f:
+            query_ids = f.read().splitlines()
+
+        tasks = []
+        for tg_client, query_id in zip(tg_clients, query_ids):
+            session_manager.create_session(tg_client.name, query_id)
+            task = asyncio.create_task(run_tapper(tg_client=tg_client, proxy=next(proxies_cycle) if proxies_cycle else None, session_manager=session_manager))
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
