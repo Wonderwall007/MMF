@@ -6,5 +6,3 @@ from . import boosts
 
 import os
 
-if not os.path.exists('sessions'):
-    os.mkdir('sessions')
