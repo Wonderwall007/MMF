@@ -1,3 +1,4 @@
+from bot.utils.session_manager import SessionManager
 import asyncio
 import json
 import random
@@ -25,9 +26,15 @@ from .useragents import user_agents
 
 class Tapper:
     def __init__(self, tg_client: Client):
-        self.session_name = tg_client.name
-        self.tg_client = tg_client
-        self.session_dict = self.load_session_data()
+       
+        self.session_manager = SessionManager()
+
+    async def run(self, proxy: str | None):
+        
+                if time() - access_token_created_time >= 3600:
+                    tg_web_data, query_id = await self.get_tg_web_data(proxy=proxy)
+                    self.session_manager.create_session(self.session_name, query_id)
+                    access_token = await self.get_access_token(http_client=http_client, tg_web_data=tg_web_data)
 
         self.GRAPHQL_URL = 'https://api-gw-tg.memefi.club/graphql'
         if settings.AUTO_GENERATE_USER_AGENT_FOR_EACH_SESSION == True:
